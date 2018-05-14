@@ -86,11 +86,9 @@ if __name__ == '__main__':
             vod_final = BeautifulSoup(driver_source, 'html.parser')          
             m3u8 = ([i['data-value'] for i in vod_final.find_all('li', class_ = 'quality activeQuality')])
             kodi_link = ''.join(m3u8)
-            mp4_links = kodi_link.split('/')[4]
-            mp4_links = mp4_links.replace('.m3u8', '_1080P.mp4')
+            id = kodi_link.split('/')[4]
+            mp4_link = id.replace('.m3u8', '_1080P.mp4')
             pre_link = 'https://vod.vodgc.net/gid1/vod/Artear/Eltrece/47/'
-            #print(mp4_links)
-#            kodi_link = ''.join(m3u8)
-            print("#EXTINF:-1,{}- {}\n{}{}".format(episode_number,episode_name,pre_link,mp4_links))
+            print("#EXTINF:-1,{} - {}\n{}{}".format(episode_number,episode_name,pre_link,mp4_link))
     
     
