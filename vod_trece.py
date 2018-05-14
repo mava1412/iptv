@@ -74,37 +74,23 @@ if __name__ == '__main__':
 #        file.write(str(codigo))
     
     l = []
-    m3u8_list = []
     for row in lst:
         if row not in l:
-            l.append(row)
             page_source = make_soup(row)
+            episode_number = page_source.find('h1', class_ = 'heading').get_text()
+            episode_name = page_source.find('h3', class_ = 'head-line').get_text()
             vodgc = ([i['src'] for i in page_source.find_all('iframe')])
             link = vodgc[1]
             driver.get(link)
             driver_source = driver.page_source
             vod_final = BeautifulSoup(driver_source, 'html.parser')          
             m3u8 = ([i['data-value'] for i in vod_final.find_all('li', class_ = 'quality activeQuality')])
-            print(m3u8)
-            m3u8_list.append(m3u8)
-    print(len(m3u8_list))
- 
+            kodi_link = ''.join(m3u8)
+            mp4_links = kodi_link.split('/')[4]
+            mp4_links = mp4_links.replace('.m3u8', '_1080P.mp4')
+            pre_link = 'https://vod.vodgc.net/gid1/vod/Artear/Eltrece/47/'
+            #print(mp4_links)
+#            kodi_link = ''.join(m3u8)
+            print("#EXTINF:-1,{}- {}\n{}{}".format(episode_number,episode_name,pre_link,mp4_links))
     
     
-    
-# #     for elem in l:
-# #         print(elem)
-# #     print(len(l))
-#     i = 'https://www.eltrecetv.com.ar/programas/simona/capitulos-completos/capitulo-70-de-simona_101378'
-#     #for i in l:
-#     br = RoboBrowser(history=True)
-#     br.open(i)
-#     vodgc = ([i['src'] for i in br.find_all('iframe')])
-#     print(vodgc[1])
-#     br1 = RoboBrowser(history=True)
-#     source = br1.open(vodgc[1])
-#     print(source)
-# #     m3u8 = ([i['data-value'] for i in br.find_all('li', class_ = 'quality activeQuality')])
-# #     print(m3u8)
-# #     kodi_link = ''.join(m3u8)
-# #     print("#EXTINF:-1,Simona\n {}".format(kodi_link))
