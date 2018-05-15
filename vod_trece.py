@@ -1,5 +1,8 @@
 from urllib import request
 from bs4 import BeautifulSoup
+import time
+import random
+import itertools
 
 from pyvirtualdisplay import Display
 
@@ -20,25 +23,40 @@ def make_soup(url):
   return(soup)
 
 base = "https://www.eltrecetv.com.ar"
-capitulos = '/simona/capitulos-completos?page='
+capitulos = '/simona?page='
 
-page_soup = make_soup('https://www.eltrecetv.com.ar/simona/capitulos-completos')
+page_soup = make_soup('https://www.eltrecetv.com.ar/simona')
 
 pages = []
 
 last_page = page_soup.find('li', class_= 'pager__item pager__item--last').find('a')
 last_page_url = last_page['href']
-last_page_num = int(last_page_url[-1])
+last_page_num = last_page_url.split('=')[-1]
+page_no = int(last_page_num)
+
+l = []
+
+def find_links_base_page():
+    visited = []
+    page = 'https://www.eltrecetv.com.ar/simona'
+    soup = make_soup(page)
+    for a in soup.find_all('a'):
+        try:
+            if '/programas/simona/capitulos-completos/capitulo' in a['href'] and a['href'] not in visited:
+              l.append(base + a['href'])
+              visited.append(a['href'])
+        except:
+            pass
+    return(l)
 
 
 def find_links():
-  l = []
   visited = []
-  for link in range(last_page_num):
+  for link in range(page_no):
     soup = make_soup(base+capitulos+str(link+1))
     for a in soup.find_all('a'):
       try:
-        if '/programas/simona/capitulos-completos/capitulo' in a['href']:#and a['href'] not in visited:       
+        if '/programas/simona/capitulos-completos/capitulo' in a['href'] and a['href'] not in visited:
           l.append(base + a['href'])
           visited.append(a['href'])
       except:
@@ -49,7 +67,7 @@ def find_links():
 def trim_list(lst):
         final_lst = []
         for line in lst:
-            if line not in final_lst:
+            if line not in final_lst and '#comments' not in line:
                 final_lst.append(line)
         return(final_lst)
 
@@ -59,22 +77,34 @@ if __name__ == '__main__':
     display = Display(visible=0, size=(1920, 1080)).start()
 
     driver = webdriver.Firefox()
-    lst = find_links()
+    
+    lst_1 = find_links()
+    lst_2 = find_links_base_page()
+    
+    final_list = itertools.chain(lst_1, lst_2)
 
-    final_list = trim_list(lst)
+    full_url_list = trim_list(final_list)
+#    
+#    with open('final_list.txt', 'w') as f:
+#        for row in full_url_list:
+#            f.write(row+ '\n')
 
-    for row in final_list:
-        page_source = make_soup(row)
-        episode_number = page_source.find('h1', class_ = 'heading').get_text()
-        episode_name = page_source.find('h3', class_ = 'head-line').get_text()
-        vodgc = ([i['src'] for i in page_source.find_all('iframe')])
-        link = vodgc[1]
-        driver.get(link)
-        driver_source = driver.page_source
-        vod_final = BeautifulSoup(driver_source, 'html.parser')          
-        m3u8 = ([i['data-value'] for i in vod_final.find_all('li', class_ = 'quality activeQuality')])
-        kodi_link = ''.join(m3u8).strip()
-        id = kodi_link.split('/')[4]
-        mp4_link = id.replace('.m3u8', '_1080P.mp4')
-        pre_link = 'https://vod.vodgc.net/gid1/vod/Artear/Eltrece/47/'
-        print("#EXTINF:-1,{} - {}\n{}{}".format(episode_number,episode_name,pre_link,mp4_link))
+    visited = []
+    for row in full_url_list:
+        if row not in visited:
+            visited.append(row)
+            page_source = make_soup(row)
+            episode_number = page_source.find('h1', class_ = 'heading').get_text()
+            episode_name = page_source.find('h3', class_ = 'head-line').get_text()
+            vodgc = ([i['src'] for i in page_source.find_all('iframe')])
+            link = vodgc[1]
+            driver.get(link)
+            time.sleep(random.randint(2, 5))
+            driver_source = driver.page_source
+            vod_final = BeautifulSoup(driver_source, 'html.parser')          
+            m3u8 = ([i['data-value'] for i in vod_final.find_all('li', class_ = 'quality activeQuality')])
+            kodi_link = ''.join(m3u8).strip()
+            id_link = kodi_link.split('/')[4]
+            mp4_link = id_link.replace('.m3u8', '_1080P.mp4')
+            pre_link = 'https://vod.vodgc.net/gid1/vod/Artear/Eltrece/47/'
+            print("#EXTINF:-1,{} - {}\n{}{}".format(episode_number,episode_name,pre_link,mp4_link))
